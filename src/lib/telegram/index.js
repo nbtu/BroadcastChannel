@@ -138,28 +138,25 @@ function getPost($, item, { channel, staticProxy, index = 0 }) {
     $(a)?.attr('href', `/search/${encodeURIComponent($(a)?.text())}`)
   })?.map((_index, a) => $(a)?.text()?.replace('#', ''))?.get()
 
-  return {
-    id,
-    title,
-    type: $(item).attr('class')?.includes('service_message') ? 'service' : 'text',
-    datetime: $(item).find('.tgme_widget_message_date time')?.attr('datetime'),
-    tags,
-    text: content?.text(),
-    content: [
-      getReply($, item, { channel }),
-      getImages($, item, { staticProxy, id, index, title }),
-      getVideo($, item, { staticProxy, id, index, title }),
-      getAudio($, item, { staticProxy, id, index, title }),
-      content?.html(),
-      getImageStickers($, item, { staticProxy, index }),
-      getVideoStickers($, item, { staticProxy, index }),
-      // $(item).find('.tgme_widget_message_sticker_wrap')?.html(),
-      $(item).find('.tgme_widget_message_poll')?.html(),
-      $.html($(item).find('.tgme_widget_message_document_wrap')),
-      $.html($(item).find('.tgme_widget_message_video_player.not_supported')),
-      $.html($(item).find('.tgme_widget_message_location_wrap')),
-      getLinkPreview($, item, { staticProxy, index }),
-    ].filter(Boolean).join('').replace(/(url\(["'])((https?:)?\/\/)/g, (match, p1, p2, _p3) => {
+  // Generate the content HTML
+  let contentHTML = [
+    getReply($, item, { channel }),
+    getImages($, item, { staticProxy, id, index, title }),
+    getVideo($, item, { staticProxy, id, index, title }),
+    getAudio($, item, { staticProxy, id, index, title }),
+    content?.html(),
+    getImageStickers($, item, { staticProxy, index }),
+    getVideoStickers($, item, { staticProxy, index }),
+    $(item).find('.tgme_widget_message_poll')?.html(),
+    $.html($(item).find('.tgme_widget_message_document_wrap')),
+    $.html($(item).find('.tgme_widget_message_video_player.not_supported')),
+    $.html($(item).find('.tgme_widget_message_location_wrap')),
+    getLinkPreview($, item, { staticProxy, index }),
+  ].filter(Boolean).join('')
+
+  // Replace URLs
+  contentHTML = contentHTML
+    .replace(/(url\(["'])((https?:)?\/\/)/g, (match, p1, p2, _p3) => {
       if (p2 === '//') {
         p2 = 'https://'
       }
@@ -167,7 +164,18 @@ function getPost($, item, { channel, staticProxy, index = 0 }) {
         return false
       }
       return `${p1}${staticProxy}${p2}`
-    }),
+    })
+    // Replace https://t.me/kbjbav/anything?single with https://t.me/kbjba1
+    .replace(/https:\/\/t\.me\/kbjbav\/[^?]+\?single/g, 'https://t.me/kbjba1')
+
+  return {
+    id,
+    title,
+    type: $(item).attr('class')?.includes('service_message') ? 'service' : 'text',
+    datetime: $(item).find('.tgme_widget_message_date time')?.attr('datetime'),
+    tags,
+    text: content?.text(),
+    content: contentHTML,
   }
 }
 
