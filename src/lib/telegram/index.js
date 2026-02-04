@@ -126,7 +126,8 @@ function modifyHTMLContent($, content, { index } = {}) {
   return content
 }
 
-function getPost($, item, { channel, staticProxy, index = 0 }) {
+//function getPost($, item, { channel, staticProxy, index = 0 }) {
+function getPost($, item, { channel, staticProxy, index = 0, isPostPage = false, }) {
   item = item ? $(item).find('.tgme_widget_message') : $('.tgme_widget_message')
   const content = $(item).find('.js-message_reply_text')?.length > 0
     ? modifyHTMLContent($, $(item).find('.tgme_widget_message_text.js-message_text'), { index })
@@ -167,6 +168,17 @@ function getPost($, item, { channel, staticProxy, index = 0 }) {
     })
     // Replace https://t.me/kbjbav/anything?single with https://t.me/kbjba1
     //.replace(/https:\/\/t\.me\/kbjbav\/[^?]+\?single/g, 'https://t.me/kbjba1')
+    .replace(/https:\/\/t\.me\/kbjbav\/([^?]+)\?single/g,
+        (_match, postId) => {
+            // 详情页 → TG
+            if (isPostPage) {
+              return 'https://t.me/kbjba1'
+            }
+        // 其它页面 → 站内
+            return `/posts/${postId}`
+        }
+    )
+
     .replace(/https:\/\/t\.me\/kbjbav\/([^?]+)\?single/g,
                (_match, postId) => `/posts/${id}`
             )
@@ -222,12 +234,15 @@ export async function getChannelInfo(Astro, { before = '', after = '', q = '', t
 
   const $ = cheerio.load(html, {}, false)
   if (id) {
-    const post = getPost($, null, { channel, staticProxy })
+//    const post = getPost($, null, { channel, staticProxy })
+    const post = getPost($, null, { channel, staticProxy, isPostPage: Boolean(id), })
     cache.set(cacheKey, post)
+    
     return post
   }
   const posts = $('.tgme_channel_history  .tgme_widget_message_wrap')?.map((index, item) => {
-    return getPost($, item, { channel, staticProxy, index })
+//    return getPost($, item, { channel, staticProxy, index })
+    return getPost($, item, { channel, staticProxy, index, isPostPage: false, })
   })?.get()?.reverse().filter(post => ['text'].includes(post.type) && post.id && post.content)
 
   const channelInfo = {
